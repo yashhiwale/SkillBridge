@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -13,7 +14,6 @@ import {
   ChevronRight,
   LogIn,
   Menu,
-  Network,
   UserRound,
   X,
 } from 'lucide-react';
@@ -45,6 +45,8 @@ const ROLE_TONES: Record<UserRole, string> = {
 // TODO(auth): point Login / Get Started at the real auth routes.
 const AUTH_HREF = '/#get-started';
 
+const BRAND_LOGO_SRC = '/brand/skillbridge-logo.jpg';
+
 const FOCUS_RING =
   'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2';
 
@@ -57,8 +59,15 @@ const hashOf = (href: string): string | null =>
 function Brand({ compactTagline = false }: { compactTagline?: boolean }) {
   return (
     <Link href="/" aria-label="SkillBridge home" className={`group flex items-center gap-2.5 rounded-xl ${FOCUS_RING}`}>
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/25 transition-transform duration-300 group-hover:rotate-3 group-hover:scale-105">
-        <Network className="h-5 w-5" aria-hidden="true" />
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-md shadow-indigo-500/25 transition-transform duration-300 group-hover:rotate-3 group-hover:scale-105">
+        <Image
+          src={BRAND_LOGO_SRC}
+          alt=""
+          width={40}
+          height={40}
+          priority
+          className="h-full w-full object-cover"
+        />
       </span>
       <span className="flex flex-col leading-tight">
         <span className="text-base font-bold tracking-tight text-slate-900">SkillBridge</span>
