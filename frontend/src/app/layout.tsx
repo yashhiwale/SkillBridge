@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Shell } from '@/components/layout/Shell';
 import type { UserRole } from '@/types/roles';
+import { Providers } from './Providers';
 import './globals.css';
 
 const inter = Inter({
@@ -57,12 +58,15 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <Shell
-          role={PLACEHOLDER_SESSION.role}
-          userName={PLACEHOLDER_SESSION.userName}
-        >
-          {children}
-        </Shell>
+
+        <Providers>
+          <Shell
+            role={PLACEHOLDER_SESSION.role}
+            userName={PLACEHOLDER_SESSION.userName}
+          >
+            {children}
+          </Shell>
+        </Providers>
       </body>
     </html>
   );

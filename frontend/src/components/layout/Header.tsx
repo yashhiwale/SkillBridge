@@ -27,14 +27,15 @@ import {
   groupNavItems,
   isActiveRoute,
 } from '@/components/navigation/NavLinks';
+import { useAuth } from '@/components/auth/AuthContext';
 import { Badge } from '@/components/ui/Badge';
 import type { HeaderProps } from '@/types/common';
 import type { UserRole } from '@/types/roles';
 import { ROLE_LABELS } from '@/types/roles';
 
-/* ─────────────────────────────────────────────────────────────
-   Constants
-───────────────────────────────────────────────────────────── */
+/*
+  Constants
+*/
 const ROLE_TONES: Record<UserRole, string> = {
   student: 'from-indigo-500 to-violet-600',
   faculty: 'from-emerald-500 to-teal-600',
@@ -42,8 +43,8 @@ const ROLE_TONES: Record<UserRole, string> = {
   industry: 'from-sky-500 to-blue-600',
 };
 
-// TODO(auth): point Login / Get Started at the real auth routes.
-const AUTH_HREF = '/#get-started';
+const LOGIN_HREF = '/auth/login';
+const REGISTER_HREF = '/auth/register';
 
 const BRAND_LOGO_SRC = '/brand/skillbridge-logo.jpg';
 
@@ -53,12 +54,16 @@ const FOCUS_RING =
 const hashOf = (href: string): string | null =>
   href.includes('#') ? href.slice(href.indexOf('#') + 1) : null;
 
-/* ─────────────────────────────────────────────────────────────
-   Brand
-───────────────────────────────────────────────────────────── */
+/*
+  Brand
+*/
 function Brand({ compactTagline = false }: { compactTagline?: boolean }) {
   return (
-    <Link href="/" aria-label="SkillBridge home" className={`group flex items-center gap-2.5 rounded-xl ${FOCUS_RING}`}>
+    <Link
+      href="/"
+      aria-label="SkillBridge home"
+      className={`group flex items-center gap-2.5 rounded-xl ${FOCUS_RING}`}
+    >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-md shadow-indigo-500/25 transition-transform duration-300 group-hover:rotate-3 group-hover:scale-105">
         <Image
           src={BRAND_LOGO_SRC}
@@ -70,7 +75,9 @@ function Brand({ compactTagline = false }: { compactTagline?: boolean }) {
         />
       </span>
       <span className="flex flex-col leading-tight">
-        <span className="text-base font-bold tracking-tight text-slate-900">SkillBridge</span>
+        <span className="text-base font-bold tracking-tight text-slate-900">
+          SkillBridge
+        </span>
         <span
           className={[
             'text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500',
@@ -84,9 +91,9 @@ function Brand({ compactTagline = false }: { compactTagline?: boolean }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Role menu (landing, desktop)
-───────────────────────────────────────────────────────────── */
+/*
+  Role menu (landing, desktop)
+*/
 function RoleMenu({ className = '' }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -94,7 +101,8 @@ function RoleMenu({ className = '' }: { className?: string }) {
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
+      if (rootRef.current && !rootRef.current.contains(event.target as Node))
+        setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
@@ -125,7 +133,9 @@ function RoleMenu({ className = '' }: { className?: string }) {
         Select Role
         <ChevronDown
           aria-hidden="true"
-          className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 transition-transform duration-200 ${
+            open ? 'rotate-180' : ''
+          }`}
         />
       </button>
 
@@ -180,12 +190,19 @@ function RoleMenu({ className = '' }: { className?: string }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Header
-───────────────────────────────────────────────────────────── */
+/*
+  Header
+*/
 export function Header({ role = 'student', userName }: HeaderProps) {
   const pathname = usePathname();
   const isLanding = pathname === '/';
+
+  const { user: authedUser, logout } = useAuth();
+  
+  const effectiveRole: UserRole = (authedUser?.role as UserRole) ?? role;
+  const effectiveUserName = authedUser?.name ?? userName;
+  const effectiveEmail = authedUser?.email;
+  const isAuthenticated = !!authedUser;
 
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -275,10 +292,12 @@ export function Header({ role = 'student', userName }: HeaderProps) {
 
   const closeDrawer = () => setDrawerOpen(false);
 
-  const appItems = filterNavItems(NAV_ITEMS, role);
+  const appItems = filterNavItems(NAV_ITEMS, effectiveRole);
   const appGroups = groupNavItems(appItems);
-  const orderedHrefs = appGroups.flatMap((group) => group.items.map((item) => item.href));
-  const initial = userName?.trim().charAt(0).toUpperCase() ?? '';
+  const orderedHrefs = appGroups.flatMap((group) =>
+    group.items.map((item) => item.href),
+  );
+  const initial = effectiveUserName?.trim().charAt(0).toUpperCase() ?? '';
 
   return (
     <>
@@ -304,7 +323,9 @@ export function Header({ role = 'student', userName }: HeaderProps) {
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        onClick={(event) => handleAnchorClick(event, item.href)}
+                        onClick={(event) =>
+                          handleAnchorClick(event, item.href)
+                        }
                         aria-current={active ? 'location' : undefined}
                         className={[
                           'group relative inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-200 xl:px-4',
@@ -328,7 +349,7 @@ export function Header({ role = 'student', userName }: HeaderProps) {
               </ul>
             </nav>
           ) : (
-            <NavLinks role={role} className="hidden xl:block" />
+            <NavLinks role={effectiveRole} className="hidden xl:block" />
           )}
 
           {/* Right cluster */}
@@ -336,16 +357,14 @@ export function Header({ role = 'student', userName }: HeaderProps) {
             {isLanding ? (
               <>
                 <Link
-                  href={AUTH_HREF}
-                  onClick={(event) => handleAnchorClick(event, AUTH_HREF)}
+                  href={LOGIN_HREF}
                   className={`hidden items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 xl:inline-flex ${FOCUS_RING}`}
                 >
                   <LogIn className="h-4 w-4" aria-hidden="true" />
                   Login
                 </Link>
                 <Link
-                  href={AUTH_HREF}
-                  onClick={(event) => handleAnchorClick(event, AUTH_HREF)}
+                  href={REGISTER_HREF}
                   className={`hidden items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30 md:inline-flex lg:hidden xl:inline-flex ${FOCUS_RING}`}
                 >
                   Get Started
@@ -355,8 +374,8 @@ export function Header({ role = 'student', userName }: HeaderProps) {
               </>
             ) : (
               <span className="hidden sm:block">
-                <Badge variant={role} size="sm" dot>
-                  {ROLE_LABELS[role]}
+                <Badge variant={effectiveRole} size="sm" dot>
+                  {ROLE_LABELS[effectiveRole]}
                 </Badge>
               </span>
             )}
@@ -382,13 +401,17 @@ export function Header({ role = 'student', userName }: HeaderProps) {
 
       {/* Slide-in drawer */}
       <div
-        className={`fixed inset-0 z-50 transition-all duration-300 ${drawerOpen ? 'visible' : 'invisible'}`}
+        className={`fixed inset-0 z-50 transition-all duration-300 ${
+          drawerOpen ? 'visible' : 'invisible'
+        }`}
         aria-hidden={!drawerOpen}
       >
         <div
           onClick={closeDrawer}
           aria-hidden="true"
-          className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${drawerOpen ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${
+            drawerOpen ? 'opacity-100' : 'opacity-0'
+          }`}
         />
 
         <aside
@@ -428,12 +451,20 @@ export function Header({ role = 'student', userName }: HeaderProps) {
                       <li key={item.href}>
                         <Link
                           href={item.href}
-                          onClick={(event) => handleAnchorClick(event, item.href)}
-                          style={{ transitionDelay: drawerOpen ? `${60 + index * 30}ms` : '0ms' }}
+                          onClick={(event) =>
+                            handleAnchorClick(event, item.href)
+                          }
+                          style={{
+                            transitionDelay: drawerOpen
+                              ? `${60 + index * 30}ms`
+                              : '0ms',
+                          }}
                           className={[
                             'group flex items-center justify-between rounded-xl px-3 py-2.5 transition-all duration-300 hover:bg-slate-50',
                             FOCUS_RING,
-                            drawerOpen ? 'translate-x-0 opacity-100' : 'translate-x-6 opacity-0',
+                            drawerOpen
+                              ? 'translate-x-0 opacity-100'
+                              : 'translate-x-6 opacity-0',
                           ].join(' ')}
                         >
                           <span>
@@ -474,7 +505,9 @@ export function Header({ role = 'student', userName }: HeaderProps) {
                           className={[
                             'group flex items-start gap-3 rounded-xl border border-slate-200/80 px-3 py-3 transition-all duration-300 hover:border-indigo-200 hover:bg-indigo-50/40',
                             FOCUS_RING,
-                            drawerOpen ? 'translate-x-0 opacity-100' : 'translate-x-6 opacity-0',
+                            drawerOpen
+                              ? 'translate-x-0 opacity-100'
+                              : 'translate-x-6 opacity-0',
                           ].join(' ')}
                         >
                           <span
@@ -506,17 +539,70 @@ export function Header({ role = 'student', userName }: HeaderProps) {
                 <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4">
                   <div className="flex items-center gap-3">
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-base font-bold text-white shadow-md shadow-indigo-500/25">
-                      {initial ? initial : <UserRound className="h-5 w-5" aria-hidden="true" />}
+                      {initial ? (
+                        initial
+                      ) : (
+                        <UserRound className="h-5 w-5" aria-hidden="true" />
+                      )}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-slate-900">
-                        {userName ?? '—'}
+                        {effectiveUserName ?? '—'}
                       </p>
-                      <p className="text-xs text-slate-500">Workspace preview</p>
+                      <p className="truncate text-xs text-slate-500">
+                        {effectiveEmail
+                          ? effectiveEmail
+                          : isAuthenticated
+                            ? 'Signed in'
+                            : 'Guest preview'}
+                      </p>
                     </div>
-                    <Badge variant={role} size="sm" dot>
-                      {ROLE_LABELS[role]}
+                    <Badge variant={effectiveRole} size="sm" dot>
+                      {ROLE_LABELS[effectiveRole]}
                     </Badge>
+                  </div>
+
+                  <div className="mt-4">
+                    {isAuthenticated ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          logout();
+                          closeDrawer();
+                        }}
+                        className={[
+                          'inline-flex w-full items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50',
+                          FOCUS_RING,
+                        ].join(' ')}
+                      >
+                        Logout
+                      </button>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <Link
+                          href={LOGIN_HREF}
+                          onClick={closeDrawer}
+                          className={[
+                            'inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50',
+                            FOCUS_RING,
+                          ].join(' ')}
+                        >
+                          <LogIn className="h-4 w-4" aria-hidden="true" />
+                          Login
+                        </Link>
+                        <Link
+                          href={REGISTER_HREF}
+                          onClick={closeDrawer}
+                          className={[
+                            'inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 transition-all hover:shadow-lg hover:shadow-indigo-500/30',
+                            FOCUS_RING,
+                          ].join(' ')}
+                        >
+                          Register
+                          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -537,11 +623,17 @@ export function Header({ role = 'student', userName }: HeaderProps) {
                                 href={item.href}
                                 onClick={closeDrawer}
                                 aria-current={active ? 'page' : undefined}
-                                style={{ transitionDelay: drawerOpen ? `${60 + order * 30}ms` : '0ms' }}
+                                style={{
+                                  transitionDelay: drawerOpen
+                                    ? `${60 + order * 30}ms`
+                                    : '0ms',
+                                }}
                                 className={[
                                   'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300',
                                   FOCUS_RING,
-                                  drawerOpen ? 'translate-x-0 opacity-100' : 'translate-x-6 opacity-0',
+                                  drawerOpen
+                                    ? 'translate-x-0 opacity-100'
+                                    : 'translate-x-6 opacity-0',
                                   active
                                     ? 'bg-indigo-50 text-indigo-700'
                                     : 'text-slate-700 hover:bg-slate-50',
@@ -564,7 +656,9 @@ export function Header({ role = 'student', userName }: HeaderProps) {
                                   {item.icon}
                                 </span>
                                 <span className="min-w-0 flex-1">
-                                  <span className="block text-sm font-semibold">{item.label}</span>
+                                  <span className="block text-sm font-semibold">
+                                    {item.label}
+                                  </span>
                                   {item.description && (
                                     <span className="block truncate text-xs text-slate-500">
                                       {item.description}
@@ -597,16 +691,16 @@ export function Header({ role = 'student', userName }: HeaderProps) {
             {isLanding ? (
               <div className="grid grid-cols-2 gap-2">
                 <Link
-                  href={AUTH_HREF}
-                  onClick={(event) => handleAnchorClick(event, AUTH_HREF)}
+                  href={LOGIN_HREF}
+                  onClick={closeDrawer}
                   className={`inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 ${FOCUS_RING}`}
                 >
                   <LogIn className="h-4 w-4" aria-hidden="true" />
                   Login
                 </Link>
                 <Link
-                  href={AUTH_HREF}
-                  onClick={(event) => handleAnchorClick(event, AUTH_HREF)}
+                  href={REGISTER_HREF}
+                  onClick={closeDrawer}
                   className={`inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 transition-all hover:shadow-lg hover:shadow-indigo-500/30 ${FOCUS_RING}`}
                 >
                   Get Started
