@@ -1,280 +1,232 @@
+// frontend/src/app/skills/page.tsx
+
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, RefreshCw, ShieldCheck } from 'lucide-react';
+import React from 'react';
+import { useAuth } from '@/components/auth/AuthContext';
+import {
+  ShieldCheck,
+  FileCode2,
+  Database,
+  Layout,
+  Terminal,
+  MessagesSquare,
+  Presentation,
+  CheckCircle2,
+  Lock,
+  ExternalLink,
+  Award,
+} from 'lucide-react';
 
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { StateView } from '@/components/ui/StateView';
-import type { UIState, VerificationStatus } from '@/types/common';
-import { ROLE_LABELS } from '@/types/roles';
+/* ─────────────────────────────────────────────────────────────
+   Mock Data for Hackathon Demo
+───────────────────────────────────────────────────────────── */
+const VERIFICATION_LEVELS = [
+  { level: 1, label: 'Self-Declared', color: 'bg-slate-400', text: 'text-slate-700' },
+  { level: 2, label: 'Assessed', color: 'bg-blue-400', text: 'text-blue-700' },
+  { level: 3, label: 'Project-Verified', color: 'bg-violet-400', text: 'text-violet-700' },
+  { level: 4, label: 'Faculty-Verified', color: 'bg-amber-400', text: 'text-amber-700' },
+  { level: 5, label: 'Industry-Verified', color: 'bg-emerald-400', text: 'text-emerald-700' },
+];
 
-const IS_DEV = process.env.NODE_ENV !== 'production';
-const RESOLVE_DELAY_MS = 600;
-
-/** Local placeholder loader: loading → empty after a short delay (no backend yet). */
-function usePanelState() {
-  const [state, setState] = useState<UIState>('loading');
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clear = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  const load = useCallback(() => {
-    clear();
-    setState('loading');
-    // TODO(api): replace with api.get(...) from lib/api.ts
-    timerRef.current = setTimeout(() => setState('empty'), RESOLVE_DELAY_MS);
-  }, []);
-
-  const simulateError = useCallback(() => {
-    clear();
-    setState('error');
-  }, []);
-
-  useEffect(() => {
-    load();
-    return clear;
-  }, [load]);
-
-  return { state, retry: load, simulateError };
-}
-
-const TIERS: ReadonlyArray<{
-  id: VerificationStatus;
-  label: string;
-  description: string;
-}> = [
+const PASSPORT_SKILLS = [
   {
-    id: 'self-declared',
-    label: 'Self-Declared',
-    description: 'You added the skill to your profile. Not yet validated by any assessment.',
+    category: 'Core Technical',
+    skills: [
+      {
+        name: 'React.js & Next.js',
+        icon: <Layout className="h-5 w-5" />,
+        tier: 5,
+        evidence: '3 Industry Projects, 1 Internship feedback',
+        endorsedBy: 'TechCorp Lead Engineer',
+      },
+      {
+        name: 'Python & Django',
+        icon: <FileCode2 className="h-5 w-5" />,
+        tier: 4,
+        evidence: 'Advanced Web Dev Coursework',
+        endorsedBy: 'Dr. Sharma (CS Dept)',
+      },
+      {
+        name: 'PostgreSQL',
+        icon: <Database className="h-5 w-5" />,
+        tier: 3,
+        evidence: 'E-commerce DB Schema (GitHub repo)',
+        endorsedBy: 'Automated Project Hub',
+      },
+    ],
   },
   {
-    id: 'assessed',
-    label: 'Assessed',
-    description: 'Validated by a SkillBridge technical or soft skill assessment.',
+    category: 'Tools & Platforms',
+    skills: [
+      {
+        name: 'Git & GitHub',
+        icon: <Terminal className="h-5 w-5" />,
+        tier: 5,
+        evidence: '50+ Commits, CI/CD Pipeline Setup',
+        endorsedBy: 'Open Source Maintainer',
+      },
+      {
+        name: 'Docker',
+        icon: <Terminal className="h-5 w-5" />,
+        tier: 2,
+        evidence: 'Passed Level 2 SkillBridge Assessment',
+        endorsedBy: 'Platform Assessment',
+      },
+    ],
   },
   {
-    id: 'project-verified',
-    label: 'Project-Verified',
-    description: 'Backed by evidence in your Project & Evidence Hub — repositories, demos, certificates.',
-  },
-  {
-    id: 'faculty-verified',
-    label: 'Faculty-Verified',
-    description: 'Reviewed and endorsed by an academician at your institution.',
-  },
-  {
-    id: 'industry-verified',
-    label: 'Industry-Verified',
-    description: 'Endorsed by an industry reviewer or recruiter through the feedback loop.',
+    category: 'Soft Skills',
+    skills: [
+      {
+        name: 'Technical Communication',
+        icon: <MessagesSquare className="h-5 w-5" />,
+        tier: 4,
+        evidence: 'Capstone Project Presentation',
+        endorsedBy: 'Prof. Verma',
+      },
+      {
+        name: 'Client Presentation',
+        icon: <Presentation className="h-5 w-5" />,
+        tier: 1,
+        evidence: 'Added to profile on onboarding',
+        endorsedBy: 'Self-Claimed',
+      },
+    ],
   },
 ];
 
-type TierFilter = 'all' | VerificationStatus;
-
-const TIER_FILTERS: ReadonlyArray<{ id: TierFilter; label: string }> = [
-  { id: 'all', label: 'All tiers' },
-  ...TIERS.map((tier) => ({ id: tier.id, label: tier.label })),
-];
-
-const PASSPORT_SUMMARY = [
-  { label: 'Passport entries', value: '—' },
-  { label: 'Highest tier reached', value: '—' },
-  { label: 'Pending reviews', value: '—' },
-  { label: 'Last verification', value: '—' },
-] as const;
-
-export default function SkillsPage() {
-  const passport = usePanelState();
-  const [activeFilter, setActiveFilter] = useState<TierFilter>('all');
-
-  const activeFilterLabel =
-    TIER_FILTERS.find((filter) => filter.id === activeFilter)?.label ?? 'All tiers';
+export default function SkillPassportPage() {
+  const { user } = useAuth();
+  
+  // Default to a generic name if no user is logged in
+  const displayName = user?.name || 'Alex Learner';
+  const displayRole = user?.role === 'student' ? 'Computer Science Student' : 'SkillBridge User';
 
   return (
-    <div className="space-y-10">
-      {/* Page header */}
-      <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
-            Skills
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            Verified Skill Passport
-          </h1>
-          <p className="max-w-2xl text-slate-600">
-            Your portable, evidence-backed record of skills. Each entry carries a verification
-            tier that faculty, institutions, and recruiters can trust at a glance.
+    <div className="mx-auto max-w-5xl py-8">
+      
+      {/* ── Header Section ──────────────────────────────── */}
+      <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <ShieldCheck className="h-8 w-8 text-indigo-600" />
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Verified Skill Passport</h1>
+          </div>
+          <p className="text-lg text-slate-600">
+            The portable, evidence-backed competency record for <span className="font-semibold text-indigo-600">{displayName}</span>.
           </p>
         </div>
-        <Badge variant="student" size="md" dot>
-          {ROLE_LABELS.student}
-        </Badge>
-      </header>
-
-      {/* Summary + panel */}
-      <section
-        aria-labelledby="passport-panels-heading"
-        className="grid grid-cols-1 gap-6 lg:grid-cols-3"
-      >
-        <h2 id="passport-panels-heading" className="sr-only">
-          Passport data
-        </h2>
-
-        <div className="space-y-6 lg:col-span-2">
-          {/* Tier filter chips */}
-          <div
-            role="group"
-            aria-label="Filter passport entries by verification tier"
-            className="flex flex-wrap gap-2"
-          >
-            {TIER_FILTERS.map((filter) => {
-              const isActive = filter.id === activeFilter;
-              return (
-                <button
-                  key={filter.id}
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={() => setActiveFilter(filter.id)}
-                  className={[
-                    'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
-                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
-                    isActive
-                      ? 'border-indigo-600 bg-indigo-600 text-white'
-                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900',
-                  ].join(' ')}
-                >
-                  {filter.label}
-                </button>
-              );
-            })}
+        
+        {/* Quick Stats for Demo */}
+        <div className="flex gap-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Total Skills</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">7</p>
           </div>
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">Industry Verified</p>
+            <p className="mt-1 text-2xl font-bold text-emerald-700">2</p>
+          </div>
+        </div>
+      </div>
 
-          {/* Passport entries panel */}
-          <Card padding="lg" bordered>
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900">Passport entries</h3>
-                <p className="text-sm text-slate-500">
-                  Showing: <span className="font-medium text-slate-700">{activeFilterLabel}</span>
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {IS_DEV && (
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    leftIcon={<AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />}
-                    onClick={passport.simulateError}
-                    ariaLabel="Simulate error state for passport entries"
+      {/* ── Skills Mapping ──────────────────────────────── */}
+      <div className="space-y-10">
+        {PASSPORT_SKILLS.map((group) => (
+          <div key={group.category}>
+            <h2 className="mb-4 text-lg font-bold text-slate-900">{group.category}</h2>
+            <div className="grid gap-5 md:grid-cols-2">
+              
+              {group.skills.map((skill) => {
+                const currentTier = VERIFICATION_LEVELS.find((v) => v.level === skill.tier)!;
+                
+                return (
+                  <div 
+                    key={skill.name} 
+                    className="relative flex flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md"
                   >
-                    Simulate error
-                  </Button>
-                )}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}
-                  onClick={passport.retry}
-                  ariaLabel="Retry loading passport entries"
-                >
-                  Retry
-                </Button>
-              </div>
+                    {/* Header */}
+                    <div className="mb-6 flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 ${currentTier.text}`}>
+                          {skill.icon}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-900">{skill.name}</h3>
+                          <span className={`mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-100 ${currentTier.text}`}>
+                            {currentTier.label}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {skill.tier === 5 && (
+                        <Award className="h-6 w-6 text-emerald-500" aria-label="Top Tier Achieved" />
+                      )}
+                    </div>
+
+                    {/* Progression Track */}
+                    <div className="mb-6">
+                      <div className="flex justify-between">
+                        {VERIFICATION_LEVELS.map((level, idx) => {
+                          const isAchieved = level.level <= skill.tier;
+                          const isCurrent = level.level === skill.tier;
+                          
+                          return (
+                            <div key={level.level} className="relative flex flex-col items-center">
+                              {/* Connecting Line */}
+                              {idx !== 0 && (
+                                <div 
+                                  className={`absolute right-[50%] top-2.5 -z-10 h-1 w-[calc(100%-1.25rem)] -translate-y-1/2 rounded-full ${
+                                    isAchieved ? currentTier.color : 'bg-slate-100'
+                                  }`} 
+                                />
+                              )}
+                              
+                              {/* Dot */}
+                              <div 
+                                className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+                                  isAchieved 
+                                    ? `border-transparent ${currentTier.color} text-white` 
+                                    : 'border-slate-200 bg-white text-slate-300'
+                                } ${isCurrent ? 'ring-4 ring-slate-100' : ''}`}
+                                title={level.label}
+                              >
+                                {isAchieved ? <CheckCircle2 className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-2 flex justify-between px-1">
+                        <span className="text-[10px] font-semibold text-slate-400">Claimed</span>
+                        <span className="text-[10px] font-semibold text-emerald-500">Industry</span>
+                      </div>
+                    </div>
+
+                    {/* Evidence Footer */}
+                    <div className="mt-auto rounded-xl bg-slate-50 p-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-700">Evidence:</span>
+                        <span className="flex items-center gap-1 text-xs text-indigo-600 hover:underline cursor-pointer">
+                          View details <ExternalLink className="h-3 w-3" />
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">{skill.evidence}</p>
+                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                        By: {skill.endorsedBy}
+                      </p>
+                    </div>
+
+                  </div>
+                );
+              })}
+
             </div>
-
-            <StateView
-              state={passport.state}
-              title={
-                passport.state === 'error'
-                  ? 'Passport unavailable'
-                  : passport.state === 'loading'
-                    ? 'Loading your passport'
-                    : 'Your passport is empty'
-              }
-              description={
-                passport.state === 'error'
-                  ? 'The passport service did not respond. Retry to reload your entries.'
-                  : passport.state === 'loading'
-                    ? 'Fetching skill entries and their verification tiers.'
-                    : activeFilter === 'all'
-                      ? 'Add skills to your profile or complete an assessment to create your first passport entry.'
-                      : `No entries at the ${activeFilterLabel} tier yet. Entries move up the ladder as evidence is reviewed.`
-              }
-              action={{ label: 'Retry', onClick: passport.retry }}
-            />
-          </Card>
-        </div>
-
-        {/* Passport summary */}
-        <Card padding="lg" bordered>
-          <div className="mb-6 flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">Passport summary</h3>
-              <p className="text-sm text-slate-500">Verification overview</p>
-            </div>
-            <span className="rounded-xl bg-indigo-50 p-2 text-indigo-600">
-              <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-            </span>
           </div>
-          <dl className="divide-y divide-slate-100">
-            {PASSPORT_SUMMARY.map((item) => (
-              <div key={item.label} className="flex items-center justify-between py-3">
-                <dt className="text-sm text-slate-500">{item.label}</dt>
-                <dd className="text-sm font-semibold text-slate-900">{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-          <div className="mt-6">
-            <Button variant="primary" size="sm" fullWidth>
-              Add a skill
-            </Button>
-          </div>
-        </Card>
-      </section>
+        ))}
+      </div>
 
-      {/* Static structure: tier legend */}
-      <section aria-labelledby="tier-legend-heading" className="space-y-6">
-        <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
-            Verification ladder
-          </p>
-          <h2
-            id="tier-legend-heading"
-            className="text-2xl font-bold tracking-tight text-slate-900"
-          >
-            What each tier means
-          </h2>
-        </div>
-
-        <Card padding="none" bordered>
-          <ol className="divide-y divide-slate-100">
-            {TIERS.map((tier, index) => (
-              <li
-                key={tier.id}
-                className="flex flex-col gap-2 px-6 py-4 sm:flex-row sm:items-center sm:gap-6"
-              >
-                <span className="w-8 shrink-0 text-xs font-semibold uppercase tracking-widest text-slate-400">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <div className="w-44 shrink-0">
-                  <Badge variant={tier.id} size="sm" dot>
-                    {tier.label}
-                  </Badge>
-                </div>
-                <p className="text-sm text-slate-600">{tier.description}</p>
-              </li>
-            ))}
-          </ol>
-        </Card>
-      </section>
     </div>
   );
 }

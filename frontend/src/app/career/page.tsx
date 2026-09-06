@@ -1,293 +1,241 @@
+// frontend/src/app/career/page.tsx
+
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Flag, Map, RefreshCw, Target } from 'lucide-react';
-
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/components/auth/AuthContext';
+import {
+  Target,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
+  ArrowRight,
+  BookOpen,
+  Compass,
+  Cpu,
+  Clock,
+  Briefcase,
+  Sparkles
+} from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { StateView } from '@/components/ui/StateView';
-import type { UIState } from '@/types/common';
-import { ROLE_LABELS } from '@/types/roles';
 
-const IS_DEV = process.env.NODE_ENV !== 'production';
-const RESOLVE_DELAY_MS = 600;
+/* ─────────────────────────────────────────────────────────────
+   Mock Data for AI Gap Analysis Demo
+───────────────────────────────────────────────────────────── */
+const TARGET_ROLE = "Senior Frontend Engineer";
+const MATCH_SCORE = 78;
 
-/** Local placeholder loader: loading → empty after a short delay (no backend yet). */
-function usePanelState() {
-  const [state, setState] = useState<UIState>('loading');
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+const GAP_ANALYSIS = [
+  {
+    skill: 'React.js & Next.js',
+    currentTier: 5,
+    requiredTier: 4,
+    status: 'surpassed',
+    gap: 0,
+  },
+  {
+    skill: 'TypeScript Architecture',
+    currentTier: 2,
+    requiredTier: 4,
+    status: 'gap',
+    gap: 2,
+  },
+  {
+    skill: 'System Design',
+    currentTier: 1,
+    requiredTier: 3,
+    status: 'gap',
+    gap: 2,
+  },
+  {
+    skill: 'CI/CD & DevOps',
+    currentTier: 3,
+    requiredTier: 3,
+    status: 'met',
+    gap: 0,
+  },
+];
 
-  const clear = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
+const AI_ROADMAP = [
+  {
+    step: 1,
+    title: 'Master Advanced TypeScript',
+    duration: '2 Weeks',
+    type: 'Learning',
+    description: 'Complete the recommended module on TS Generics and Utility Types to bridge the Level 2 to Level 4 gap.',
+    icon: <BookOpen className="h-5 w-5" />,
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-50',
+  },
+  {
+    step: 2,
+    title: 'Build a Micro-Frontend Dashboard',
+    duration: '3 Weeks',
+    type: 'Project Evidence',
+    description: 'Create a project using Next.js and Tailwind to serve as evidence for your System Design requirement.',
+    icon: <Cpu className="h-5 w-5" />,
+    color: 'text-violet-600',
+    bgColor: 'bg-violet-50',
+  },
+  {
+    step: 3,
+    title: 'Request Faculty Verification',
+    duration: '1 Week',
+    type: 'Endorsement',
+    description: 'Submit your Micro-Frontend architecture to Prof. Sharma for a Tier 4 Faculty-Verified badge.',
+    icon: <CheckCircle2 className="h-5 w-5" />,
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-50',
+  },
+];
 
-  const load = useCallback(() => {
-    clear();
-    setState('loading');
-    // TODO(api): replace with api.get(...) from lib/api.ts
-    timerRef.current = setTimeout(() => setState('empty'), RESOLVE_DELAY_MS);
-  }, []);
+export default function CareerRoadmapPage() {
+  const { user } = useAuth();
+  const [isAnalyzing, setIsAnalyzing] = useState(true);
 
-  const simulateError = useCallback(() => {
-    clear();
-    setState('error');
-  }, []);
-
+  // Fake AI Processing Delay for demo
   useEffect(() => {
-    load();
-    return clear;
-  }, [load]);
+    const timer = setTimeout(() => {
+      setIsAnalyzing(false);
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, []);
 
-  return { state, retry: load, simulateError };
-}
+  const displayName = user?.name || 'Alex Learner';
 
-const ROADMAP_PHASES = [
-  {
-    id: 'foundation',
-    step: '01',
-    title: 'Foundation',
-    description:
-      'Close the highest-priority gaps identified against your target role with curated learning and short practice tasks.',
-  },
-  {
-    id: 'build',
-    step: '02',
-    title: 'Build',
-    description:
-      'Apply new skills in portfolio projects and log evidence — repositories, demos, and write-ups — in your Evidence Hub.',
-  },
-  {
-    id: 'verify',
-    step: '03',
-    title: 'Verify',
-    description:
-      'Submit evidence for faculty and industry review to move passport entries up the verification ladder.',
-  },
-] as const;
-
-export default function CareerPage() {
-  const gaps = usePanelState();
-  const roadmap = usePanelState();
+  if (isAnalyzing) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-5xl flex-col items-center justify-center p-8 text-center">
+        <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-indigo-50 shadow-inner">
+          <Sparkles className="absolute h-10 w-10 animate-pulse text-indigo-500" />
+          <svg className="absolute inset-0 h-full w-full animate-[spin_3s_linear_infinite]" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="48" fill="none" stroke="#e0e7ff" strokeWidth="4" />
+            <circle cx="50" cy="50" r="48" fill="none" stroke="#6366f1" strokeWidth="4" strokeDasharray="150" strokeDashoffset="50" strokeLinecap="round" />
+          </svg>
+        </div>
+        <h2 className="mt-6 text-2xl font-bold text-slate-900">AI is analyzing your Skill Passport...</h2>
+        <p className="mt-2 max-w-md text-slate-500">
+          Comparing {displayName}&apos;s verified competencies against real-time industry requirements for {TARGET_ROLE}.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-10">
-      {/* Page header */}
-      <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
-            Career
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            Skill Gap Analysis &amp; Action Roadmap
-          </h1>
-          <p className="max-w-2xl text-slate-600">
-            Compare your assessed skills against the expectations of a target role, then follow a
-            personalized roadmap of milestones that turns each gap into verifiable progress.
+    <div className="mx-auto max-w-5xl py-8">
+      
+      {/* ── Header Section ──────────────────────────────── */}
+      <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <Compass className="h-8 w-8 text-indigo-600" />
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Career Gap Analysis</h1>
+          </div>
+          <p className="text-lg text-slate-600">
+            Personalized action roadmap for <span className="font-semibold text-indigo-600">{TARGET_ROLE}</span>
           </p>
         </div>
-        <Badge variant="student" size="md" dot>
-          {ROLE_LABELS.student}
-        </Badge>
-      </header>
-
-      {/* Target role selector placeholder */}
-      <Card padding="lg" bordered>
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 rounded-xl bg-indigo-50 p-2 text-indigo-600">
-              <Target className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">Target role</h2>
-              <p className="text-sm text-slate-500">
-                Gap analysis and roadmap are computed against the role you select here.
-              </p>
-            </div>
+        
+        {/* Match Score Card */}
+        <div className="flex items-center gap-4 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-white p-5 shadow-sm">
+          <div className="flex flex-col">
+            <span className="text-xs font-semibold uppercase tracking-widest text-indigo-600">Role Match</span>
+            <span className="text-sm text-slate-500">Based on passport tiers</span>
           </div>
-          <div className="w-full md:w-80">
-            <label
-              htmlFor="target-role"
-              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500"
-            >
-              Select target role
-            </label>
-            <select
-              id="target-role"
-              disabled
-              defaultValue=""
-              aria-describedby="target-role-help"
-              className="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500"
-            >
-              <option value="">— No roles loaded —</option>
-            </select>
-            <p id="target-role-help" className="mt-1.5 text-xs text-slate-500">
-              Role catalogue loads from the career service.
-              {/* TODO(api): replace with api.get(...) from lib/api.ts */}
-            </p>
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-md shadow-indigo-200/50">
+            <span className="text-xl font-bold text-indigo-700">{MATCH_SCORE}%</span>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Data panels */}
-      <section
-        aria-labelledby="career-panels-heading"
-        className="grid grid-cols-1 gap-6 lg:grid-cols-2"
-      >
-        <h2 id="career-panels-heading" className="sr-only">
-          Career data
-        </h2>
-
-        {/* Skill gap panel */}
-        <Card padding="lg" bordered>
-          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">Skill gaps</h3>
-              <p className="text-sm text-slate-500">
-                Skills your target role expects that are not yet assessed or verified.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {IS_DEV && (
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  leftIcon={<AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />}
-                  onClick={gaps.simulateError}
-                  ariaLabel="Simulate error state for skill gaps"
-                >
-                  Simulate error
-                </Button>
-              )}
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}
-                onClick={gaps.retry}
-                ariaLabel="Retry loading skill gaps"
-              >
-                Retry
-              </Button>
-            </div>
+      <div className="grid gap-8 lg:grid-cols-12">
+        
+        {/* ── Left Column: Gap Analysis ──────────────────────────────── */}
+        <div className="lg:col-span-7">
+          <div className="mb-4 flex items-center gap-2">
+            <Target className="h-5 w-5 text-slate-700" />
+            <h2 className="text-xl font-bold text-slate-900">Competency Mapping</h2>
           </div>
-
-          <StateView
-            state={gaps.state}
-            title={
-              gaps.state === 'error'
-                ? 'Gap analysis unavailable'
-                : gaps.state === 'loading'
-                  ? 'Analysing skill gaps'
-                  : 'No gap analysis yet'
-            }
-            description={
-              gaps.state === 'error'
-                ? 'The career service did not respond. Retry to run the analysis again.'
-                : gaps.state === 'loading'
-                  ? 'Comparing your passport against the selected target role.'
-                  : 'Select a target role and complete at least one assessment to generate your first gap analysis.'
-            }
-            action={{ label: 'Retry', onClick: gaps.retry }}
-          />
-        </Card>
-
-        {/* Roadmap milestones panel */}
-        <Card padding="lg" bordered>
-          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">Roadmap milestones</h3>
-              <p className="text-sm text-slate-500">
-                Ordered actions with due dates, linked resources, and evidence checkpoints.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {IS_DEV && (
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  leftIcon={<AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />}
-                  onClick={roadmap.simulateError}
-                  ariaLabel="Simulate error state for roadmap milestones"
-                >
-                  Simulate error
-                </Button>
-              )}
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}
-                onClick={roadmap.retry}
-                ariaLabel="Retry loading roadmap milestones"
-              >
-                Retry
-              </Button>
-            </div>
-          </div>
-
-          <StateView
-            state={roadmap.state}
-            title={
-              roadmap.state === 'error'
-                ? 'Roadmap unavailable'
-                : roadmap.state === 'loading'
-                  ? 'Loading roadmap'
-                  : 'No roadmap yet'
-            }
-            description={
-              roadmap.state === 'error'
-                ? 'We could not fetch your milestones. Retry to try again.'
-                : roadmap.state === 'loading'
-                  ? 'Fetching your personalized action plan.'
-                  : 'Your roadmap is generated from your gap analysis. Milestones will appear here once a target role is set.'
-            }
-            action={{ label: 'Retry', onClick: roadmap.retry }}
-          />
-        </Card>
-      </section>
-
-      {/* Static structure: roadmap phases */}
-      <section aria-labelledby="phases-heading" className="space-y-6">
-        <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
-            Roadmap structure
-          </p>
-          <h2 id="phases-heading" className="text-2xl font-bold tracking-tight text-slate-900">
-            How your roadmap is organised
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {ROADMAP_PHASES.map((phase) => (
-            <Card key={phase.id} padding="lg" bordered hoverable>
-              <div className="flex h-full flex-col">
+          
+          <div className="space-y-4">
+            {GAP_ANALYSIS.map((item) => (
+              <div key={item.skill} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
-                    Phase {phase.step}
-                  </span>
-                  <span className="rounded-xl bg-slate-100 p-2 text-slate-600">
-                    {phase.id === 'verify' ? (
-                      <Flag className="h-4 w-4" aria-hidden="true" />
-                    ) : (
-                      <Map className="h-4 w-4" aria-hidden="true" />
-                    )}
-                  </span>
+                  <h3 className="font-bold text-slate-900">{item.skill}</h3>
+                  {item.status === 'surpassed' && <Badge variant="success" size="sm">Surpassed</Badge>}
+                  {item.status === 'met' && <Badge variant="industry" size="sm">Requirement Met</Badge>}
+                  {item.status === 'gap' && <Badge variant="student" size="sm">Tier Gap: {item.gap}</Badge>}
                 </div>
-                <h3 className="text-base font-semibold text-slate-900">{phase.title}</h3>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">
-                  {phase.description}
-                </p>
-                <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
-                  <span className="text-slate-500">Milestones</span>
-                  <span className="font-semibold text-slate-900">—</span>
+                
+                {/* Visual Gap Bar */}
+                <div className="relative h-2.5 w-full rounded-full bg-slate-100">
+                  {/* Required Target Marker */}
+                  <div 
+                    className="absolute top-1/2 -mt-2 h-4 w-1 rounded-full bg-slate-800" 
+                    style={{ left: `${(item.requiredTier / 5) * 100}%` }}
+                    title={`Required: Tier ${item.requiredTier}`}
+                  />
+                  {/* Current Level Fill */}
+                  <div 
+                    className={`absolute left-0 top-0 h-full rounded-full transition-all duration-1000 ease-out ${
+                      item.status === 'gap' ? 'bg-amber-400' : 'bg-emerald-500'
+                    }`}
+                    style={{ width: `${(item.currentTier / 5) * 100}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex justify-between text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <span>T1 (Self)</span>
+                  <span>T5 (Industry)</span>
                 </div>
               </div>
-            </Card>
-          ))}
+            ))}
+          </div>
         </div>
-      </section>
+
+        {/* ── Right Column: AI Roadmap ──────────────────────────────── */}
+        <div className="lg:col-span-5">
+          <div className="mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-slate-700" />
+            <h2 className="text-xl font-bold text-slate-900">Action Roadmap</h2>
+          </div>
+          
+          <div className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="absolute bottom-10 left-10 top-10 w-0.5 bg-slate-100" />
+            
+            <div className="space-y-8">
+              {AI_ROADMAP.map((step) => (
+                <div key={step.step} className="relative flex gap-5">
+                  <div className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${step.bgColor} ${step.color} shadow-sm ring-4 ring-white`}>
+                    {step.icon}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Step {step.step}</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                        <Clock className="h-3 w-3" /> {step.duration}
+                      </span>
+                    </div>
+                    <h3 className="mt-1 font-bold text-slate-900">{step.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.description}</p>
+                    <button className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700">
+                      Start {step.type} <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-8 rounded-xl bg-slate-50 p-4 text-sm text-slate-600 border border-slate-100">
+              <div className="flex items-start gap-2">
+                <Briefcase className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
+                <p>Completing this roadmap will increase your <strong>Role Match to 95%</strong>, unlocking direct interview invites.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
