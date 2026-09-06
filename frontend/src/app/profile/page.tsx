@@ -1,308 +1,229 @@
+// frontend/src/app/profile/page.tsx
+
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
+import { useAuth } from '@/components/auth/AuthContext';
 import {
-  AlertTriangle,
-  Award,
-  FolderGit2,
+  User,
   Github,
-  Globe,
+  Award,
+  CheckCircle2,
+  FolderGit2,
+  Clock,
+  ExternalLink,
+  Plus,
   RefreshCw,
-  UserRound,
+  FileCode2
 } from 'lucide-react';
-
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { StateView } from '@/components/ui/StateView';
-import type { UIState } from '@/types/common';
-import { ROLE_LABELS } from '@/types/roles';
 
-const IS_DEV = process.env.NODE_ENV !== 'production';
-const RESOLVE_DELAY_MS = 600;
-
-/** Local placeholder loader: loading → empty after a short delay (no backend yet). */
-function usePanelState() {
-  const [state, setState] = useState<UIState>('loading');
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clear = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  const load = useCallback(() => {
-    clear();
-    setState('loading');
-    // TODO(api): replace with api.get(...) from lib/api.ts
-    timerRef.current = setTimeout(() => setState('empty'), RESOLVE_DELAY_MS);
-  }, []);
-
-  const simulateError = useCallback(() => {
-    clear();
-    setState('error');
-  }, []);
-
-  useEffect(() => {
-    load();
-    return clear;
-  }, [load]);
-
-  return { state, retry: load, simulateError };
-}
-
-const PROFILE_FIELDS = [
-  { label: 'Institution', value: '—' },
-  { label: 'Programme', value: '—' },
-  { label: 'Graduation year', value: '—' },
-  { label: 'Headline', value: '—' },
-  { label: 'Career profiling', value: '—' },
-] as const;
-
-const EVIDENCE_TYPES = [
+/* ─────────────────────────────────────────────────────────────
+   Mock Data for Evidence Hub Demo
+───────────────────────────────────────────────────────────── */
+const REPOSITORIES = [
   {
-    id: 'github',
-    title: 'GitHub repositories',
-    description:
-      'Link repositories that demonstrate a skill. Commits, README quality, and tests are visible to reviewers.',
-    icon: Github,
+    id: 1,
+    name: 'e-commerce-microservices',
+    language: 'TypeScript',
+    linkedSkill: 'React.js & Next.js',
+    status: 'verified', // Faculty or Industry verified
+    updated: '2 days ago',
+    commits: 142,
   },
   {
-    id: 'demo',
-    title: 'Live demos',
-    description:
-      'Deployed applications or notebooks reviewers can open and interact with directly.',
-    icon: Globe,
+    id: 2,
+    name: 'python-data-pipeline',
+    language: 'Python',
+    linkedSkill: 'Python & Django',
+    status: 'pending', // Waiting for verification
+    updated: '1 week ago',
+    commits: 38,
+  },
+];
+
+const CERTIFICATIONS = [
+  {
+    id: 1,
+    title: 'Advanced React Patterns',
+    issuer: 'Frontend Masters',
+    date: 'Aug 2026',
+    linkedSkill: 'React.js & Next.js',
+    verified: true,
   },
   {
-    id: 'certificate',
-    title: 'Certificates',
-    description:
-      'Course completions and industry certifications attached as supporting evidence.',
-    icon: Award,
+    id: 2,
+    title: 'AWS Certified Developer',
+    issuer: 'Amazon Web Services',
+    date: 'Jul 2026',
+    linkedSkill: 'Cloud Deployment',
+    verified: true,
   },
-] as const;
+];
 
 export default function ProfilePage() {
-  const evidence = usePanelState();
-  const credentials = usePanelState();
+  const { user } = useAuth();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [synced, setSynced] = useState(false);
+
+  const handleSync = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+      setSynced(true);
+      // Reset after 3 seconds for demo replayability
+      setTimeout(() => setSynced(false), 3000);
+    }, 1500);
+  };
+
+  const displayName = user?.name || 'Alex Learner';
+  const displayEmail = user?.email || 'alex@example.com';
+  
+  // Fixed TS Error by casting to string
+  const roleStr = user?.role as string;
+  const roleLabel = roleStr === 'industry' ? 'Employer' : roleStr === 'faculty' ? 'Educator' : 'Student Candidate';
 
   return (
-    <div className="space-y-10">
-      {/* Page header */}
-      <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
-            Profile
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            Personal Profile &amp; Evidence Hub
-          </h1>
-          <p className="max-w-2xl text-slate-600">
-            The single place reviewers see who you are and what you can prove. Keep your profile
-            current and attach evidence to every skill you want verified.
-          </p>
-        </div>
-        <Badge variant="student" size="md" dot>
-          {ROLE_LABELS.student}
-        </Badge>
-      </header>
-
-      {/* Summary + evidence panel */}
-      <section
-        aria-labelledby="profile-panels-heading"
-        className="grid grid-cols-1 gap-6 lg:grid-cols-3"
-      >
-        <h2 id="profile-panels-heading" className="sr-only">
-          Profile data
-        </h2>
-
-        {/* Profile summary card */}
-        <Card padding="lg" bordered>
-          <div className="flex items-center gap-4">
-            <span
-              aria-hidden="true"
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600"
-            >
-              <UserRound className="h-7 w-7" />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-lg font-semibold text-slate-900">—</p>
-              <p className="truncate text-sm text-slate-500">—</p>
-              <div className="mt-1.5">
-                <Badge variant="student" size="xs">
-                  {ROLE_LABELS.student}
-                </Badge>
+    <div className="mx-auto max-w-5xl py-8">
+      
+      {/* ── Profile Header ──────────────────────────────── */}
+      <div className="mb-10 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="h-32 bg-gradient-to-r from-indigo-500 to-violet-600 sm:h-40" />
+        <div className="px-6 pb-8 sm:px-10">
+          <div className="relative flex justify-between sm:flex-row flex-col sm:items-end">
+            <div className="flex items-end gap-5">
+              <div className="-mt-12 flex h-24 w-24 items-center justify-center rounded-3xl border-4 border-white bg-slate-100 text-slate-400 shadow-md sm:-mt-16 sm:h-32 sm:w-32">
+                <User className="h-12 w-12 sm:h-16 sm:w-16" />
+              </div>
+              <div className="mb-2 sm:mb-4">
+                <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{displayName}</h1>
+                <p className="font-medium text-slate-500">{displayEmail}</p>
               </div>
             </div>
+            <div className="mt-4 sm:mb-4 sm:mt-0">
+              <Badge variant="student" size="md" dot>{roleLabel}</Badge>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Evidence Hub Section ──────────────────────────────── */}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Project & Evidence Hub</h2>
+          <p className="text-sm text-slate-500">Connect repositories and certificates to boost your Skill Passport tiers.</p>
+        </div>
+        <button className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+          <Plus className="h-4 w-4" /> Add Evidence
+        </button>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        
+        {/* ── Repositories ──────────────────────────────── */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-slate-900">
+              <Github className="h-5 w-5" />
+              <h3 className="font-bold">Linked Repositories</h3>
+            </div>
+            <button 
+              onClick={handleSync}
+              disabled={isSyncing || synced}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                synced 
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700' 
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {isSyncing ? (
+                <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Syncing...</>
+              ) : synced ? (
+                <><CheckCircle2 className="h-3.5 w-3.5" /> Synced</>
+              ) : (
+                <><RefreshCw className="h-3.5 w-3.5" /> Sync GitHub</>
+              )}
+            </button>
           </div>
 
-          <dl className="mt-6 divide-y divide-slate-100 border-t border-slate-100">
-            {PROFILE_FIELDS.map((field) => (
-              <div key={field.label} className="flex items-center justify-between py-3">
-                <dt className="text-sm text-slate-500">{field.label}</dt>
-                <dd className="text-sm font-semibold text-slate-900">{field.value}</dd>
-              </div>
-            ))}
-          </dl>
+          <div className="space-y-4">
+            {REPOSITORIES.map((repo) => (
+              <div key={repo.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <FolderGit2 className="h-5 w-5 text-indigo-500" />
+                    <span className="font-semibold text-slate-900">{repo.name}</span>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-slate-400 hover:text-indigo-600 cursor-pointer" />
+                </div>
+                
+                <div className="mt-3 flex items-center gap-3 text-xs text-slate-500">
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-blue-500" /> {repo.language}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <FileCode2 className="h-3.5 w-3.5" /> {repo.commits} commits
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" /> {repo.updated}
+                  </span>
+                </div>
 
-          <div className="mt-6 space-y-2">
-            <Button variant="primary" size="sm" fullWidth>
-              Edit profile
-            </Button>
-            <Button variant="secondary" size="sm" fullWidth>
-              Share public profile
-            </Button>
-          </div>
-          {/* TODO(api): replace with api.get(...) from lib/api.ts */}
-        </Card>
-
-        {/* Evidence panel */}
-        <div className="lg:col-span-2">
-          <Card padding="lg" bordered>
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-xl bg-indigo-50 p-2 text-indigo-600">
-                  <FolderGit2 className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">Project &amp; Evidence Hub</h3>
-                  <p className="text-sm text-slate-500">
-                    Repositories, live demos, and certificates linked to passport skills.
-                  </p>
+                <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
+                  <span className="text-xs font-medium text-slate-500">
+                    Linked to: <span className="font-semibold text-slate-700">{repo.linkedSkill}</span>
+                  </span>
+                  {repo.status === 'verified' ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Verified
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                      <Clock className="h-3.5 w-3.5" /> Pending
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {IS_DEV && (
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    leftIcon={<AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />}
-                    onClick={evidence.simulateError}
-                    ariaLabel="Simulate error state for evidence"
-                  >
-                    Simulate error
-                  </Button>
-                )}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}
-                  onClick={evidence.retry}
-                  ariaLabel="Retry loading evidence"
-                >
-                  Retry
-                </Button>
-              </div>
-            </div>
-
-            <StateView
-              state={evidence.state}
-              title={
-                evidence.state === 'error'
-                  ? 'Evidence unavailable'
-                  : evidence.state === 'loading'
-                    ? 'Loading evidence'
-                    : 'No evidence added yet'
-              }
-              description={
-                evidence.state === 'error'
-                  ? 'The evidence service did not respond. Retry to reload your items.'
-                  : evidence.state === 'loading'
-                    ? 'Fetching linked repositories, demos, and certificates.'
-                    : 'Add a GitHub repository, live demo, or certificate and link it to a skill to start moving entries toward Project-Verified.'
-              }
-              action={{ label: 'Retry', onClick: evidence.retry }}
-            />
-
-            {/* Evidence type structure */}
-            <div className="mt-6 grid grid-cols-1 gap-4 border-t border-slate-100 pt-6 sm:grid-cols-3">
-              {EVIDENCE_TYPES.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <div
-                    key={type.id}
-                    className="rounded-xl border border-slate-200/80 bg-slate-50 p-4"
-                  >
-                    <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-700 ring-1 ring-slate-200">
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    <h4 className="text-sm font-semibold text-slate-900">{type.title}</h4>
-                    <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                      {type.description}
-                    </p>
-                    <p className="mt-3 text-xs text-slate-500">
-                      Linked: <span className="font-semibold text-slate-900">—</span>
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
+            ))}
+          </div>
         </div>
-      </section>
 
-      {/* Credentials panel */}
-      <section aria-labelledby="credentials-heading">
-        <Card padding="lg" bordered>
-          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
-                Credentials
-              </p>
-              <h2 id="credentials-heading" className="text-lg font-semibold text-slate-900">
-                Academic &amp; professional credentials
-              </h2>
-              <p className="text-sm text-slate-500">
-                Degrees, enrolments, and institution-issued credentials attached to your profile.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {IS_DEV && (
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  leftIcon={<AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />}
-                  onClick={credentials.simulateError}
-                  ariaLabel="Simulate error state for credentials"
-                >
-                  Simulate error
-                </Button>
-              )}
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}
-                onClick={credentials.retry}
-                ariaLabel="Retry loading credentials"
-              >
-                Retry
-              </Button>
+        {/* ── Certifications ──────────────────────────────── */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-slate-900">
+              <Award className="h-5 w-5" />
+              <h3 className="font-bold">Certifications & Credentials</h3>
             </div>
           </div>
 
-          <StateView
-            state={credentials.state}
-            title={
-              credentials.state === 'error'
-                ? 'Credentials unavailable'
-                : credentials.state === 'loading'
-                  ? 'Loading credentials'
-                  : 'No credentials on record'
-            }
-            description={
-              credentials.state === 'error'
-                ? 'We could not load your credentials. Retry to try again.'
-                : credentials.state === 'loading'
-                  ? 'Fetching credentials issued by your institution.'
-                  : 'Credentials issued or confirmed by your institution will be listed here once your institution account is linked.'
-            }
-            action={{ label: 'Retry', onClick: credentials.retry }}
-          />
-        </Card>
-      </section>
+          <div className="space-y-4">
+            {CERTIFICATIONS.map((cert) => (
+              <div key={cert.id} className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+                  <Award className="h-6 w-6" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-slate-900">{cert.title}</h4>
+                  <p className="mt-0.5 text-xs text-slate-500">{cert.issuer} • Issued {cert.date}</p>
+                  
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-500">
+                      Linked to: <span className="font-semibold text-slate-700">{cert.linkedSkill}</span>
+                    </span>
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-3 text-sm font-semibold text-slate-500 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600">
+            <Plus className="h-4 w-4" /> Upload Certificate
+          </button>
+        </div>
+
+      </div>
     </div>
   );
 }

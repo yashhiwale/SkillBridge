@@ -1,269 +1,245 @@
+// frontend/src/app/assessment/page.tsx
+
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/components/auth/AuthContext';
 import {
-  AlertTriangle,
-  Brain,
-  ClipboardList,
-  Code2,
-  MessagesSquare,
-  RefreshCw,
+  BrainCircuit,
+  Play,
+  ChevronRight,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Loader2,
+  ArrowRight,
+  ShieldCheck,
+  Compass
 } from 'lucide-react';
 
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { StateView } from '@/components/ui/StateView';
-import type { UIState } from '@/types/common';
-import { ROLE_LABELS } from '@/types/roles';
+/* ─────────────────────────────────────────────────────────────
+   Mock Data for Assessment Demo (Showing 3 out of 80)
+───────────────────────────────────────────────────────────── */
+const TOTAL_QUESTIONS = 80;
 
-const IS_DEV = process.env.NODE_ENV !== 'production';
-const RESOLVE_DELAY_MS = 600;
+const DEMO_QUESTIONS = [
+  {
+    id: 1,
+    category: 'System Design',
+    text: 'Which of the following database scaling techniques involves partitioning data across multiple independent databases?',
+    options: ['Vertical Scaling', 'Replication', 'Sharding', 'Caching'],
+  },
+  {
+    id: 2,
+    category: 'React.js Architecture',
+    text: 'What is the primary benefit of React Server Components (RSC) introduced in Next.js App Router?',
+    options: [
+      'They allow you to use useState on the server.',
+      'They reduce the client-side JavaScript bundle size.',
+      'They replace the need for REST APIs completely.',
+      'They automatically manage global state like Redux.'
+    ],
+  },
+  {
+    id: 3,
+    category: 'Soft Skills / Scenario',
+    text: 'You discover a critical bug in production right before a major client demo. What is your immediate next step?',
+    options: [
+      'Quietly try to fix it before the demo starts without telling anyone.',
+      'Cancel the demo immediately.',
+      'Inform stakeholders of the risk, assess the fix time, and decide whether to rollback or apply a hotfix.',
+      'Blame the QA team for missing it during testing.'
+    ],
+  }
+];
 
-/** Local placeholder loader: loading → empty after a short delay (no backend yet). */
-function usePanelState() {
-  const [state, setState] = useState<UIState>('loading');
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+export default function AssessmentPage() {
+  const { user } = useAuth();
+  
+  // States: 'intro' | 'quiz' | 'analyzing' | 'completed'
+  const [phase, setPhase] = useState<'intro' | 'quiz' | 'analyzing' | 'completed'>('intro');
+  const [currentQIndex, setCurrentQIndex] = useState(0);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
-  const clear = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
+  // Auto-transition from analyzing to completed
+  useEffect(() => {
+    if (phase === 'analyzing') {
+      const timer = setTimeout(() => setPhase('completed'), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [phase]);
+
+  const handleStart = () => setPhase('quiz');
+
+  const handleNext = () => {
+    if (currentQIndex < DEMO_QUESTIONS.length - 1) {
+      setCurrentQIndex((prev) => prev + 1);
+      setSelectedOption(null);
+    } else {
+      // Finished demo questions
+      setPhase('analyzing');
     }
   };
 
-  const load = useCallback(() => {
-    clear();
-    setState('loading');
-    // TODO(api): replace with api.get(...) from lib/api.ts
-    timerRef.current = setTimeout(() => setState('empty'), RESOLVE_DELAY_MS);
-  }, []);
-
-  const simulateError = useCallback(() => {
-    clear();
-    setState('error');
-  }, []);
-
-  useEffect(() => {
-    load();
-    return clear;
-  }, [load]);
-
-  return { state, retry: load, simulateError };
-}
-
-const ASSESSMENT_TRACKS = [
-  {
-    id: 'profiling',
-    title: '20-Question Career Profiling',
-    description:
-      'A structured questionnaire that captures your interests, work preferences, and aspirations to anchor your personal profile and target roles.',
-    icon: Brain,
-    format: 'Questionnaire',
-  },
-  {
-    id: 'technical',
-    title: 'Technical Skill Assessments',
-    description:
-      'Role-aligned technical evaluations across programming, data, cloud, and domain tooling. Results feed directly into your skill gap analysis.',
-    icon: Code2,
-    format: 'Timed assessment',
-  },
-  {
-    id: 'soft',
-    title: 'Soft Skill Assessments',
-    description:
-      'Scenario-based evaluation of communication, collaboration, problem framing, and adaptability — the skills industry mentors ask about first.',
-    icon: MessagesSquare,
-    format: 'Scenario-based',
-  },
-] as const;
-
-const PROFILING_FIELDS = [
-  { label: 'Questions answered', value: '—' },
-  { label: 'Completion status', value: '—' },
-  { label: 'Last updated', value: '—' },
-  { label: 'Linked target roles', value: '—' },
-] as const;
-
-export default function AssessmentPage() {
-  const assessments = usePanelState();
-  const profiling = usePanelState();
+  const displayName = user?.name || 'Candidate';
 
   return (
-    <div className="space-y-10">
-      {/* Page header */}
-      <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
-            Assessments
+    <div className="mx-auto max-w-4xl py-12">
+      
+      {/* ── Phase 1: Intro Screen ──────────────────────────────── */}
+      {phase === 'intro' && (
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-12 text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
+            <BrainCircuit className="h-10 w-10" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Comprehensive Skill Diagnostic</h1>
+          <p className="mx-auto mt-4 max-w-xl text-lg text-slate-600">
+            Welcome, <span className="font-semibold text-indigo-600">{displayName}</span>. This diagnostic maps your technical and behavioral competencies against industry standards.
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            Career Profiling &amp; Skill Assessments
-          </h1>
-          <p className="max-w-2xl text-slate-600">
-            Start with the 20-Question Career Profiling, then validate your technical and soft
-            skills. Every completed assessment raises entries in your Skill Passport from
-            Self-Declared to Assessed.
-          </p>
-        </div>
-        <Badge variant="student" size="md" dot>
-          {ROLE_LABELS.student}
-        </Badge>
-      </header>
-
-      {/* Data panels */}
-      <section
-        aria-labelledby="assessment-panels-heading"
-        className="grid grid-cols-1 gap-6 lg:grid-cols-3"
-      >
-        <h2 id="assessment-panels-heading" className="sr-only">
-          Assessment data
-        </h2>
-
-        {/* Assessment list panel */}
-        <div className="lg:col-span-2">
-          <Card padding="lg" bordered>
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+          
+          <div className="mx-auto mt-10 grid max-w-lg gap-4 sm:grid-cols-2">
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left">
+              <Clock className="h-6 w-6 text-indigo-500" />
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Your assessments</h3>
-                <p className="text-sm text-slate-500">
-                  Available, in-progress, and completed assessments assigned to your profile.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {IS_DEV && (
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    leftIcon={<AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />}
-                    onClick={assessments.simulateError}
-                    ariaLabel="Simulate error state for the assessment list"
-                  >
-                    Simulate error
-                  </Button>
-                )}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}
-                  onClick={assessments.retry}
-                  ariaLabel="Retry loading assessments"
-                >
-                  Retry
-                </Button>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Duration</p>
+                <p className="font-semibold text-slate-900">45-60 Mins</p>
               </div>
             </div>
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left">
+              <AlertCircle className="h-6 w-6 text-indigo-500" />
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Questions</p>
+                <p className="font-semibold text-slate-900">{TOTAL_QUESTIONS} Multiple Choice</p>
+              </div>
+            </div>
+          </div>
 
-            <StateView
-              state={assessments.state}
-              title={
-                assessments.state === 'error'
-                  ? 'We couldn’t load your assessments'
-                  : assessments.state === 'loading'
-                    ? 'Loading assessments'
-                    : 'No assessments yet'
-              }
-              description={
-                assessments.state === 'error'
-                  ? 'The assessment service did not respond. Retry, or come back in a moment.'
-                  : assessments.state === 'loading'
-                    ? 'Fetching your assigned and completed assessments.'
-                    : 'Assessments will appear here once the assessment service is connected and your profiling is complete.'
-              }
-              action={{ label: 'Retry', onClick: assessments.retry }}
-            />
-          </Card>
+          <button
+            onClick={handleStart}
+            className="mt-10 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-indigo-600/25 transition-all hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-indigo-600/35"
+          >
+            <Play className="h-5 w-5 fill-current" />
+            Start Assessment
+          </button>
         </div>
+      )}
 
-        {/* Profiling status card */}
-        <Card padding="lg" bordered>
-          <div className="mb-6 flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">Profiling status</h3>
-              <p className="text-sm text-slate-500">20-Question Career Profiling</p>
+      {/* ── Phase 2: Quiz UI ──────────────────────────────────── */}
+      {phase === 'quiz' && (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+          
+          {/* Progress Header */}
+          <div className="mb-8">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-sm font-bold uppercase tracking-widest text-slate-400">
+                Question {currentQIndex + 1} <span className="text-slate-300">of {TOTAL_QUESTIONS}</span>
+              </span>
+              <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-600">
+                {DEMO_QUESTIONS[currentQIndex].category}
+              </span>
             </div>
-            <span className="rounded-xl bg-indigo-50 p-2 text-indigo-600">
-              <ClipboardList className="h-5 w-5" aria-hidden="true" />
-            </span>
+            {/* Fake progress bar scaling to 80 */}
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div 
+                className="h-full rounded-full bg-indigo-600 transition-all duration-500"
+                style={{ width: `${((currentQIndex + 1) / TOTAL_QUESTIONS) * 100}%` }}
+              />
+            </div>
+            <p className="mt-2 text-right text-[10px] text-slate-400">Note: Demo skips to analysis after 3 questions.</p>
           </div>
 
-          {profiling.state === 'empty' || profiling.state === 'success' ? (
-            <dl className="divide-y divide-slate-100">
-              {PROFILING_FIELDS.map((field) => (
-                <div key={field.label} className="flex items-center justify-between py-3">
-                  <dt className="text-sm text-slate-500">{field.label}</dt>
-                  <dd className="text-sm font-semibold text-slate-900">{field.value}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : (
-            <StateView
-              state={profiling.state}
-              title={
-                profiling.state === 'error' ? 'Profiling status unavailable' : 'Loading status'
-              }
-              description={
-                profiling.state === 'error'
-                  ? 'We could not fetch your profiling progress.'
-                  : 'Checking your career profiling progress.'
-              }
-              action={{ label: 'Retry', onClick: profiling.retry }}
-            />
-          )}
-
-          <div className="mt-6 flex items-center justify-between gap-2">
-            <Button variant="primary" size="sm" fullWidth>
-              Start profiling
-            </Button>
-            {IS_DEV && (
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={profiling.simulateError}
-                ariaLabel="Simulate error state for profiling status"
-              >
-                Err
-              </Button>
-            )}
-          </div>
-        </Card>
-      </section>
-
-      {/* Static structure: assessment tracks */}
-      <section aria-labelledby="tracks-heading" className="space-y-6">
-        <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
-            Assessment tracks
-          </p>
-          <h2 id="tracks-heading" className="text-2xl font-bold tracking-tight text-slate-900">
-            Three tracks, one verified profile
+          {/* Question Text */}
+          <h2 className="mb-8 text-xl font-bold leading-relaxed text-slate-900 sm:text-2xl">
+            {DEMO_QUESTIONS[currentQIndex].text}
           </h2>
-        </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {ASSESSMENT_TRACKS.map((track) => {
-            const Icon = track.icon;
-            return (
-              <Card key={track.id} padding="lg" bordered hoverable>
-                <div className="flex h-full flex-col">
-                  <span className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <h3 className="text-base font-semibold text-slate-900">{track.title}</h3>
-                  <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">
-                    {track.description}
-                  </p>
-                  <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
-                    <span className="text-slate-500">{track.format}</span>
-                    <span className="font-semibold text-slate-900">Status: —</span>
+          {/* Options */}
+          <div className="space-y-3">
+            {DEMO_QUESTIONS[currentQIndex].options.map((option, idx) => (
+              <button
+                key={idx}
+                onClick={() => setSelectedOption(option)}
+                className={`w-full rounded-2xl border p-4 text-left text-sm font-medium transition-all sm:text-base ${
+                  selectedOption === option
+                    ? 'border-indigo-600 bg-indigo-50 text-indigo-900 ring-1 ring-indigo-600'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
+                    selectedOption === option ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-slate-100 text-slate-500'
+                  }`}>
+                    {String.fromCharCode(65 + idx)}
                   </div>
+                  {option}
                 </div>
-              </Card>
-            );
-          })}
+              </button>
+            ))}
+          </div>
+
+          {/* Footer Controls */}
+          <div className="mt-10 flex items-center justify-between border-t border-slate-100 pt-6">
+            <button 
+              className="text-sm font-semibold text-slate-400 hover:text-slate-600"
+              onClick={() => alert("Save for later functionality goes live with API.")}
+            >
+              Save & Exit
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={!selectedOption}
+              className={`inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold transition-all ${
+                !selectedOption
+                  ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                  : 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-700'
+              }`}
+            >
+              {currentQIndex === DEMO_QUESTIONS.length - 1 ? 'Submit Assessment' : 'Next Question'}
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-      </section>
+      )}
+
+      {/* ── Phase 3: Analyzing Screen ─────────────────────────── */}
+      {phase === 'analyzing' && (
+        <div className="flex min-h-[50vh] flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+          <Loader2 className="mb-6 h-12 w-12 animate-spin text-indigo-600" />
+          <h2 className="text-2xl font-bold text-slate-900">Computing Skill Tiers...</h2>
+          <p className="mt-2 text-slate-500">Evaluating 80 responses using the SkillBridge inference engine.</p>
+        </div>
+      )}
+
+      {/* ── Phase 4: Completed Screen ─────────────────────────── */}
+      {phase === 'completed' && (
+        <div className="rounded-3xl border border-emerald-200 bg-emerald-50/50 p-8 text-center shadow-sm sm:p-12">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+            <CheckCircle2 className="h-10 w-10" />
+          </div>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900">Diagnostic Complete!</h2>
+          <p className="mx-auto mt-4 max-w-xl text-lg text-slate-600">
+            Great job! Your responses have been processed and your <span className="font-semibold text-slate-900">Verified Skill Passport</span> has been updated with Tier 2 (Assessed) badges.
+          </p>
+
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link href="/skills" className="w-full sm:w-auto">
+              <button className="flex w-full items-center justify-center gap-2 rounded-full bg-indigo-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition-all hover:bg-indigo-700 hover:shadow-lg">
+                <ShieldCheck className="h-4 w-4" />
+                View Skill Passport
+              </button>
+            </Link>
+            <Link href="/career" className="w-full sm:w-auto">
+              <button className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-slate-200 bg-white px-8 py-3.5 text-sm font-semibold text-slate-700 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
+                <Compass className="h-4 w-4" />
+                See Gap Analysis
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </Link>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
