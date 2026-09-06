@@ -11,11 +11,11 @@ import {
   ChevronRight,
   ClipboardCheck,
   Compass,
-  GraduationCap,
   Home,
   LayoutDashboard,
   ShieldCheck,
   UserCircle2,
+  GraduationCap
 } from 'lucide-react';
 
 import type { NavItem, NavLinksProps, RoleEntryPoint } from '@/types/common';
@@ -23,64 +23,67 @@ import type { UserRole } from '@/types/roles';
 
 /* ─────────────────────────────────────────────────────────────
    Authenticated app navigation. `roles` drives visibility once a
-   role is known; no authorization is enforced here.
+   role is known.
 ───────────────────────────────────────────────────────────── */
 export const NAV_ITEMS: NavItem[] = [
   {
     label: 'Home',
     href: '/',
     icon: <Home className="h-4 w-4" aria-hidden="true" />,
-    description: 'SkillBridge overview and entry point',
+    description: 'SkillBridge overview',
     roles: ['student', 'faculty', 'institution', 'industry'],
   },
+  // ── Faculty & Institution ──
   {
     label: 'Dashboard',
     href: '/dashboard',
     icon: <LayoutDashboard className="h-4 w-4" aria-hidden="true" />,
-    description: 'High-level skill readiness overview',
-    roles: ['student', 'faculty', 'institution', 'industry'],
+    description: 'Institution & Faculty Analytics',
+    roles: ['faculty', 'institution'], // Sirf in dono ko dikhega
+  },
+  // ── Industry / Employer ──
+  {
+    label: 'Employer Hub',
+    href: '/employer',
+    icon: <Building2 className="h-4 w-4" aria-hidden="true" />,
+    description: 'Discover Verified Talent',
+    roles: ['industry'], // Sirf Industry ko dikhega
+  },
+  // ── Student ──
+  {
+    label: 'Passport',
+    href: '/skills',
+    icon: <ShieldCheck className="h-4 w-4" aria-hidden="true" />,
+    description: 'Verified Skill Passport',
+    roles: ['student'], // Sirf Student ko
   },
   {
-    label: 'Student',
-    href: '/student',
-    icon: <GraduationCap className="h-4 w-4" aria-hidden="true" />,
-    description: 'Student workspace hub',
-    roles: ['student'],
+    label: 'Gap Analysis',
+    href: '/career',
+    icon: <Compass className="h-4 w-4" aria-hidden="true" />,
+    description: 'AI Action Roadmaps',
+    roles: ['student'], // Sirf Student ko
+  },
+  {
+    label: 'Opportunities',
+    href: '/opportunities',
+    icon: <Briefcase className="h-4 w-4" aria-hidden="true" />,
+    description: 'Jobs & Internships',
+    roles: ['student'], // Sirf Student ko
   },
   {
     label: 'Assessment',
     href: '/assessment',
     icon: <ClipboardCheck className="h-4 w-4" aria-hidden="true" />,
     description: 'Career profiling and skill assessments',
-    roles: ['student'],
+    roles: ['student'], // Sirf Student ko
   },
   {
-    label: 'Career',
-    href: '/career',
-    icon: <Compass className="h-4 w-4" aria-hidden="true" />,
-    description: 'Skill gap analysis and action roadmaps',
-    roles: ['student', 'faculty'],
-  },
-  {
-    label: 'Skills',
-    href: '/skills',
-    icon: <ShieldCheck className="h-4 w-4" aria-hidden="true" />,
-    description: 'Verified Skill Passport',
-    roles: ['student', 'faculty', 'institution', 'industry'],
-  },
-  {
-    label: 'Opportunities',
-    href: '/opportunities',
-    icon: <Briefcase className="h-4 w-4" aria-hidden="true" />,
-    description: 'Internships, jobs and industry projects',
-    roles: ['student', 'industry'],
-  },
-  {
-    label: 'Profile',
+    label: 'Evidence Hub',
     href: '/profile',
     icon: <UserCircle2 className="h-4 w-4" aria-hidden="true" />,
-    description: 'Personal profile and credentials',
-    roles: ['student', 'faculty', 'institution', 'industry'],
+    description: 'Projects and Credentials',
+    roles: ['student'], // Sirf Student ko
   },
 ];
 
@@ -88,9 +91,9 @@ export const NAV_ITEMS: NavItem[] = [
    Presentation-only grouping used by the app drawer.
 ───────────────────────────────────────────────────────────── */
 export const NAV_GROUPS: ReadonlyArray<{ title: string; hrefs: string[] }> = [
-  { title: 'Overview', hrefs: ['/', '/dashboard'] },
-  { title: 'My journey', hrefs: ['/student', '/assessment', '/career', '/skills'] },
-  { title: 'Connect', hrefs: ['/opportunities', '/profile'] },
+  { title: 'Overview', hrefs: ['/', '/dashboard', '/employer'] },
+  { title: 'My Journey', hrefs: ['/skills', '/career', '/assessment'] },
+  { title: 'Connect & Evidence', hrefs: ['/opportunities', '/profile'] },
 ];
 
 /* ─────────────────────────────────────────────────────────────
@@ -106,36 +109,36 @@ export const LANDING_NAV_ITEMS: NavItem[] = [
 ];
 
 /* ─────────────────────────────────────────────────────────────
-   Role entry points. Until auth is wired, choosing a role is
-   how a visitor enters the app shell.
+   Role entry points. Clicking any role card or dropdown option
+   NOW redirects to the Login/Register page per requirement.
 ───────────────────────────────────────────────────────────── */
 export const ROLE_ENTRY_POINTS: RoleEntryPoint[] = [
   {
     role: 'student',
     label: 'Student',
     description: 'Profile, assess, and build a Verified Skill Passport.',
-    href: '/student',
+    href: '/auth/register?role=student', 
     icon: <GraduationCap className="h-5 w-5" aria-hidden="true" />,
   },
   {
     role: 'faculty',
     label: 'Academician / Faculty',
     description: 'Map outcomes to competencies and verify student work.',
-    href: '/dashboard',
+    href: '/auth/register?role=faculty', 
     icon: <BookOpen className="h-5 w-5" aria-hidden="true" />,
   },
   {
     role: 'institution',
     label: 'Institution',
     description: 'Track cohort readiness and evidence programme outcomes.',
-    href: '/dashboard',
+    href: '/auth/register?role=institution', 
     icon: <Building2 className="h-5 w-5" aria-hidden="true" />,
   },
   {
     role: 'industry',
     label: 'Industry / Recruiter',
     description: 'Post projects, source verified talent, close the loop.',
-    href: '/opportunities',
+    href: '/auth/register?role=industry', 
     icon: <Briefcase className="h-5 w-5" aria-hidden="true" />,
   },
 ];
@@ -148,7 +151,7 @@ export const isActiveRoute = (pathname: string, href: string): boolean => {
   return pathname === href || pathname.startsWith(`${href}/`);
 };
 
-/** Presentation-only filter. Real authorization is a later task. */
+/** Authenticated Menu Filter: Only shows items authorized for current user role */
 export const filterNavItems = (items: NavItem[], role?: UserRole): NavItem[] =>
   role ? items.filter((item) => !item.roles || item.roles.includes(role)) : items;
 
@@ -168,9 +171,7 @@ export const groupNavItems = (items: NavItem[]): Array<{ title: string; items: N
 };
 
 /* ─────────────────────────────────────────────────────────────
-   NavLinks
-   horizontal → compact pill group (desktop header)
-   vertical   → rich rows with icon tile + description (menus)
+   NavLinks Component
 ───────────────────────────────────────────────────────────── */
 export function NavLinks({
   items = NAV_ITEMS,
@@ -180,6 +181,7 @@ export function NavLinks({
   className = '',
 }: NavLinksProps) {
   const pathname = usePathname();
+  // Ensure that UI respects the Role filtering securely
   const visibleItems = filterNavItems(items, role);
 
   if (orientation === 'vertical') {

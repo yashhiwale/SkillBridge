@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
+import { authStorage } from '@/components/auth/authStorage';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -20,9 +21,21 @@ export default function LoginPage() {
       setError('Email is required');
       return;
     }
+    
     const success = login(email);
     if (success) {
-      router.push('/');
+      const user = authStorage.getCurrentUser();
+      const roleStr = user?.role as string;
+
+      if (roleStr === 'industry') {
+  router.push('/employer');
+} else if (roleStr === 'faculty') {
+  router.push('/dashboard/faculty');
+} else if (roleStr === 'institution') {
+  router.push('/dashboard/institution');
+} else {
+  router.push('/student');
+}
     } else {
       setError('User not found. Please register first.');
     }
