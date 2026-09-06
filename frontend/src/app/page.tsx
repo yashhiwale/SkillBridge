@@ -2,7 +2,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -15,13 +15,15 @@ import {
   Handshake,
   Layers,
   Map,
-  MessageSquare,
   ShieldCheck,
   Target,
   Users,
   UserSquare2,
   Briefcase,
   BookOpen,
+  Send,
+  CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -109,7 +111,7 @@ const HOW_IT_WORKS: { title: string; description: string; icon: React.ReactNode;
   },
   {
     title: 'Prove It',
-    description: 'Attach projects, demos, and certificates. Faculty and industry endorsements raise each skill\u2019s tier.',
+    description: 'Attach projects, demos, and certificates. Faculty and industry endorsements raise each skill’s tier.',
     icon: <ShieldCheck className="h-5 w-5" aria-hidden="true" />,
     href: '/skills',
   },
@@ -211,6 +213,15 @@ const SectionHeading: React.FC<{
 );
 
 export default function HomePage() {
+  const [formState, setFormState] = useState<'idle' | 'submitting' | 'success'>('idle');
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormState('submitting');
+    // Simulate an API call delay for the prototype
+    setTimeout(() => setFormState('success'), 1200);
+  };
+
   return (
     <div className="space-y-28 pb-8">
       {/* ── Hero ──────────────────────────────────────────── */}
@@ -605,16 +616,82 @@ export default function HomePage() {
               industry partner, there is a direct path into the platform. Pick
               the channel that fits and we will route you to the right place.
             </p>
-            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
-              <MessageSquare className="h-4 w-4 text-indigo-500" aria-hidden="true" />
-              Direct messaging goes live with the API integration.
-            </div>
+
+            {formState === 'success' ? (
+              <div className="mt-8 flex flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center text-emerald-800 shadow-sm">
+                <CheckCircle2 className="mb-3 h-8 w-8 text-emerald-500" />
+                <p className="font-semibold text-lg">Message sent!</p>
+                <p className="mt-1 text-sm text-emerald-600">Our team will get back to you shortly.</p>
+                <button 
+                  type="button" 
+                  onClick={() => setFormState('idle')} 
+                  className="mt-5 text-sm font-semibold text-emerald-700 hover:text-emerald-800 underline underline-offset-2 transition-colors"
+                >
+                  Send another message
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleContactSubmit} className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="mb-1.5 block text-sm font-semibold text-slate-700">Name</label>
+                    <input 
+                      id="name"
+                      required 
+                      type="text" 
+                      placeholder="Your name"
+                      disabled={formState === 'submitting'}
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50" 
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="mb-1.5 block text-sm font-semibold text-slate-700">Email</label>
+                    <input 
+                      id="email"
+                      required 
+                      type="email" 
+                      placeholder="you@example.com"
+                      disabled={formState === 'submitting'}
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50" 
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="message" className="mb-1.5 block text-sm font-semibold text-slate-700">How can we help?</label>
+                    <textarea 
+                      id="message"
+                      required 
+                      rows={3} 
+                      placeholder="Tell us about your needs..."
+                      disabled={formState === 'submitting'}
+                      className="w-full resize-none rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50"
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={formState === 'submitting'} 
+                    className="w-full rounded-xl bg-indigo-600 py-2.5 text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-700" 
+                  >
+                    {formState === 'submitting' ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Sending...
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        Send Message
+                        <Send className="h-4 w-4" />
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
 
           <div className="grid gap-4 lg:col-span-3">
             {CONTACT_CHANNELS.map((channel) => (
-              <Link key={channel.title} href={channel.href} className="group block">
-                <Card hoverable className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <Link key={channel.title} href={channel.href} className="group block h-full">
+                <Card hoverable className="flex h-full flex-col gap-4 sm:flex-row sm:items-center">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
                     {channel.icon}
                   </span>
