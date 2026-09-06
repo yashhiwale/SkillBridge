@@ -34,10 +34,10 @@ export const viewport: Viewport = {
   themeColor: '#4f46e5',
 };
 
-/* ─────────────────────────────────────────────────────────────
-   Session placeholder. Replaced by the auth/RBAC layer later;
-   for now the shell renders a fixed default role.
-───────────────────────────────────────────────────────────── */
+/*
+  Session placeholder. Replaced by the auth/RBAC layer later;
+  for now the shell renders a fixed default role.
+*/
 const PLACEHOLDER_SESSION: { role: UserRole; userName?: string } = {
   role: 'student',
   userName: undefined,
